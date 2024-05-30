@@ -1,0 +1,21 @@
+{
+    "KPlugin": {
+        "Name": "KTile",
+        "Description": "A window tiling script for KWin",
+        "Icon": "preferences-system-windows",
+        "Authors": [
+            {
+                "Email": "carterinmotion@gmail.com",
+                "Name": "Carter Andrew"
+            }
+        ],
+        "Id": "ktile",
+        "Version": "0.1",
+        "License": "GPLv3",
+        "Website": "https://github.com/carterjandrew/ktile"
+    },
+    "X-Plasma-API": "javascript",
+    "X-Plasma-MainScript": "code/main.js",
+    "KPackageStructure": "KWin/Script",
+    "X-KDE-ConfigModule": "kwin/effects/configs/kcm_kwin4_genericscripted"
+}
