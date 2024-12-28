@@ -1,5 +1,7 @@
 ktile is a tiling application built to work with the new kde framework. Now that the most recent version is out there is a gap in the functionality of tilers like bismuth. So using the kwin scripting platform I will build a new ultra-clean and custom tiling manager
 
+# Important notes
+This does not work right with floating docks atm
 # Todo
 - [x] Figure out how to get full window dimensions with frame
 	- [ ] Figure out how to properly account for docs

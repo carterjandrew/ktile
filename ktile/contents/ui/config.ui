@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ConfigUI</class>
+ <widget class="QWidget" name="ConfigUI">
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <widget class="QLabel" name="label">
+    <property name="text">
+     <string>Set Hotkey:</string>
+    </property>
+   </widget>
+   <widget class="KShortcutEdit" name="kcfg_left"/>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
+
