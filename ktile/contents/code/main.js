@@ -3,6 +3,14 @@ const focusLeftKeybind = readConfig("left", "Meta+H");
 const focusRightKeybind = readConfig("left", "Meta+L");
 const focusUpKeybind = readConfig("left", "Meta+K");
 const focusDownKeybind = readConfig("left", "Meta+J");
+// Define a function to get desktop index for convinience
+const findDesktopIndex = (window) => workspace.desktops.findIndex(desktop =>
+	desktop === window.desktops[0]
+)
+// Function for convinence to get all normal windows
+const getNormalWindows = () => workspace.windowList()
+	.filter(window => window.normalWindow)
+
 function getWorkspaceGeometry() {
 	var workspaceGeometry = {
 		x: 0,
@@ -31,34 +39,38 @@ function getWorkspaceGeometry() {
 	return workspaceGeometry
 }
 
-function getDesktopWindowList() {
-	const desktops = Array.from({ length: workspace.desktops.length }, () => [])
-	for (const window of workspace.windowList()) {
-		if (window.normalWindow) {
-			desktops[workspace.desktops.findIndex(desktop =>
-				desktop === window.desktops[0]
-			)].push(window)
-		}
-	}
-	return desktops
+// Returns a object whos:
+// Keys are a string cast of each window
+// Values are the index of the tiler they are currently assosiated with
+function getWindowToTilerHash() {
+	const windowToTiler = {}
+	getNormalWindows()
+		.forEach(window => {
+			const windowId = String(window)
+			const tilerIndex = findDesktopIndex(window)
+			windowToTiler[windowId] = tilerIndex
+		})
+	return windowToTiler
 }
 
 function ktileInit() {
 	print('KTile_Init_____________________________')
-	const desktops = getDesktopWindowList()
+	const windowToTiler = getWindowToTilerHash()
 	const workspaceGeometry = getWorkspaceGeometry()
-	return { desktops, workspaceGeometry }
+	return { windowToTiler, workspaceGeometry }
 }
 
-const { desktops, workspaceGeometry } = ktileInit()
-print(`Desktops: ${desktops}`)
-print(`Workspace Geometry: ${JSON.stringify(workspaceGeometry)}`)
+const { windowToTiler, workspaceGeometry } = ktileInit()
 
 // This will create a tiler for each of our desktops
-// Takes in the desktops we have created, this is just a list of windows organzised by virtual desktop
-// Takes in an inital tiler to be used on each window, in our case: monocole
-function createWorkspaces(desktops, InitalTiler) {
-	return desktops.map(windows => new InitalTiler(windows))
+// Each tiler is passed the windows on that desktop
+function createTilers(InitalTiler) {
+	const windowList = getNormalWindows()
+	return workspace.desktops.map(desktop =>
+		new InitalTiler(
+			windowList.filter(window => window.desktops[0] === desktop)
+		)
+	)
 }
 // Class for a super simple monocle tiler
 class MonocleTiler {
@@ -85,6 +97,7 @@ class MonocleTiler {
 	}
 	// Tile function will retile the existing windows
 	tile() {
+		console.log("Focus index:", this.currentFocusIndex)
 		this.windows.forEach((window, index) => {
 			window.window.frameGeometry = workspaceGeometry
 			window.window.keepBelow = !window.floating && index !== this.currentFocusIndex
@@ -100,8 +113,12 @@ class MonocleTiler {
 		this.tile()
 	}
 	popWindow(window) {
-		print(`Window: ${window}`)
-		print(`Found: ${this.windows.find(w => w.window === window)}`)
+		const w = this.windows.find(w => w.window === window)
+		this.windows = this.windows.filter(w => w.window !== window)
+		return w
+	}
+	pushWindowObject(window) {
+		this.windows = [...this.windows, window]
 	}
 }
 
@@ -116,13 +133,31 @@ function onDesktopChanged() {
 }
 workspace.currentDesktopChanged.connect(onDesktopChanged)
 
-const workspaces = createWorkspaces(desktops, MonocleTiler)
+const tilers = createTilers(MonocleTiler)
 // Inital tiling
-workspaces.forEach(workspace => workspace.tile())
+tilers.forEach(workspace => workspace.tile())
 
 function focusLeft() {
-	workspaces[currentDesktopIndex].focusLeft()
+	tilers[currentDesktopIndex].focusLeft()
+	tilers[currentDesktopIndex].tile()
 }
+
+// Define a function that can take in a window object and change it's tiler
+function handleWindowDesktopChange(window) {
+	const windowId = String(window)
+	const tilerIndex = windowToTiler[windowId]
+	const newIndex = findDesktopIndex(window)
+	console.log(`Moving window object from ${tilerIndex} to ${newIndex}`)
+	const windowObject = tilers[tilerIndex].popWindow(window)
+	tilers[newIndex].pushWindowObject(windowObject)
+	tilers[newIndex].tile()
+}
+
+getNormalWindows().forEach(window => {
+	window.desktopsChanged.connect(() => {
+		handleWindowDesktopChange(window)
+	})
+})
 
 // Register shortcuts for interacting with tilers
 registerShortcut("KTile focus left", "Cause desktop to focus one screen to the left", focusLeftKeybind, focusLeft)
